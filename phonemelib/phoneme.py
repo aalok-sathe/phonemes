@@ -1,5 +1,4 @@
-__author__ = 'Anton Melnikov'
-             ' and Aalok Sathe and Shinjini Ghosh'
+__author__ = 'Anton Melnikov' + ' and Aalok Sathe and Shinjini Ghosh'
 
 
 from collections import Counter, OrderedDict, defaultdict
@@ -37,22 +36,40 @@ ipaexpr = Grammar(r'''
 
 semiterm = {'VOICE', 'PLACE', 'LATERAL', 'MANNER', 'RELEASE',
             'NEAR', 'OPENING', 'POSITION', 'ROUNDING'}
-def flatten(tree, collection:dict=defaultdict(list)):
+def flatten(tree, collection:defaultdict(list)):
     '''flattens a tree and picks out relevant properties
     (semi-terminals) specified in a set a priori
 
     example output in collection:
     '''
+    # is it a semiterminal?
     if tree.expr_name in semiterm:
         expr_name = tree.expr_name
         while tree and not hasattr(tree.expr, 'literal'):
             tree = tree.children[0]
         collection[expr_name.lower()] += [tree.expr.literal]
 
+    # mark broad category
+    if tree.expr_name.lower() in {'vowel', 'consonant'}:
+        collection[tree.expr_name.lower()] = [tree.expr_name.lower()]
+
+    # make recursive calls till leafs encountered (empty children)
     for subtree in tree.children:
         flatten(subtree, collection)
 
+    # create placeholder entry for all keys
+    for key in semiterm.union({'vowel', 'consonant'}): collection[key.lower()]
     return collection
+
+
+Sonority = Enum('Sonority', [' ',
+                             "consonant",
+                             "voiceless", "voiced",
+                             "click", "implosive", "stop", "plosive",
+                             "fricative", "nasal", "trill", "lateral", "tap",
+                             "flap", "approximant", "approximate",
+                             "vowel",
+                             "close", "close-mid", "mid", "open-mid", "open"])
 
 
 class FeatureValue(Enum):
@@ -70,7 +87,7 @@ class FeatureValueDict(OrderedDict):
 
 class Phoneme:
 
-    def __init__(self, symbol, name, features, info=None, is_complete=True,
+    def __init__(self, symbol, name, features, info, is_complete=True,
                  parent_phonemes: set=None, feature_counter: Counter=None,
                  parent_similarity=1.0):
         """
@@ -80,7 +97,10 @@ class Phoneme:
 
         self.symbol = symbol
         self.name = name
-        self.info = parse_ipa(info)
+        self.ipa_desc = self.parse_ipa(info['ipa description'])
+        self.properties = info
+        self.properties['sonority'] = self.sonority()
+
         self.is_complete = is_complete
 
         if parent_phonemes:
@@ -149,7 +169,7 @@ class Phoneme:
                 feature_value = FeatureValue.yes
             elif value is False:
                 feature_value = FeatureValue.no
-            elif value is 0:
+            elif value == 0:
                 feature_value = FeatureValue.unspecified
             elif value == '±':
                 feature_value = FeatureValue.both
@@ -160,18 +180,29 @@ class Phoneme:
 
         return features
 
-    @staticmethod
-    def parse_ipa(info_dict) -> FeatureValueDict:
+    # @staticmethod
+    def parse_ipa(self, ipa_desc) -> FeatureValueDict:
 
-        if info_dict is None: return info_dict
+        classes = defaultdict(str)
 
-        info = defaultdict(list)
-
-        features = info_dict['IPA Description'].lower()
+        features = ipa_desc.lower()
         tree = ipaexpr.parse(features)
-        classes = {k: ' '.join(v) for k, v in flatten(tree).items()}
+        classes.update({k: ' '.join(v) for k, v in flatten(tree, defaultdict(list)).items()})
 
         return classes
+
+    def sonority(self):
+        '''computes a sonority score of this phoneme'''
+        score = 0
+
+        manner = self.ipa_desc['manner'].split() + [self.ipa_desc['lateral']]
+        props = [self.ipa_desc['voice'], self.ipa_desc['consonant'], self.ipa_desc['vowel'], self.ipa_desc['opening']]
+
+        score += sum(Sonority[key or ' '].value for key in manner)/len(manner)
+        score += sum([Sonority[key or ' '].value for key in props])
+
+        return score
+
 
     @property
     def features(self):
@@ -182,6 +213,7 @@ class Phoneme:
         for feature, value in self:
             if value == FeatureValue.yes or value == FeatureValue.both:
                 yield feature
+
 
     def similarity_ratio(self, other):
         """

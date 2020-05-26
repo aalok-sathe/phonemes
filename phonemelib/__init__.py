@@ -1,5 +1,4 @@
-__author__ = 'Anton Melnikov'
-             ' and Aalok Sathe and Shinjini Ghosh'
+__author__ = 'Anton Melnikov' + ' and Aalok Sathe and Shinjini Ghosh'
 
 from collections import OrderedDict
 import json
@@ -13,6 +12,8 @@ ipabook_path = Path(this_path.parent.parent, 'ipabook.json')
 
 with phonemes_path.open() as phonemes_file:
     phoneme_dict = json.load(phonemes_file, object_pairs_hook=OrderedDict)
+    # todo make this a defaultdict (phoneme_dict) and decreases dependence
+    # on this list
 
 with ipabook_path.open() as ipabook_file:
     ipa_dict = json.load(ipabook_file, object_pairs_hook=OrderedDict)
