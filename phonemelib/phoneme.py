@@ -1,10 +1,58 @@
 __author__ = 'Anton Melnikov'
+             ' and Aalok Sathe and Shinjini Ghosh'
 
 
-from collections import Counter, OrderedDict
+from collections import Counter, OrderedDict, defaultdict
 from enum import Enum
 from itertools import chain
 from pprint import pprint
+
+from parsimonious.grammar import Grammar
+from parsimonious import IncompleteParseError
+
+
+ipaexpr = Grammar(r'''
+         SOUND = CONSONANT / VOWEL / OTHER
+
+         CONSONANT = (VOICE SP)? PLACE (SP "or" SP PLACE)? (SP LATERAL)? SP MANNER (SP "or" SP MANNER)? (SP RELEASE)?
+
+         VOICE = "voiced" / "voiceless"
+         PLACE = "velar" / "labial" / "dental" / "alveolar" / "uvular" / "palatal" / "retroflex" / "labiodental" / "bilabial" / "glottal" / "pharyngeal" / "postalveolar" / "alveolo-palatal" / "syllabic"
+         LATERAL = "lateral"
+         MANNER = "stop" / "fricative" / "approximant" / "approximate" / "implosive" / "plosive" / "click" / "nasal" / "trill" / "tap" / "flap" / "affricate"
+         RELEASE = "release"
+
+         VOWEL = NEAR? OPENING SP NEAR? POSITION SP ROUNDING SP "vowel"
+
+         NEAR = "near-"
+         OPENING = "open" / "mid" / "close" / "open-mid" / "close-mid"
+         POSITION = "front" / "central" / "back"
+         ROUNDING = "rounded" / "unrounded"
+
+         OTHER = (~".+" SP?)*
+
+         SP = ~"\s+"
+     ''')
+
+
+semiterm = {'VOICE', 'PLACE', 'LATERAL', 'MANNER', 'RELEASE',
+            'NEAR', 'OPENING', 'POSITION', 'ROUNDING'}
+def flatten(tree, collection:dict=defaultdict(list)):
+    '''flattens a tree and picks out relevant properties
+    (semi-terminals) specified in a set a priori
+
+    example output in collection:
+    '''
+    if tree.expr_name in semiterm:
+        expr_name = tree.expr_name
+        while tree and not hasattr(tree.expr, 'literal'):
+            tree = tree.children[0]
+        collection[expr_name.lower()] += [tree.expr.literal]
+
+    for subtree in tree.children:
+        flatten(subtree, collection)
+
+    return collection
 
 
 class FeatureValue(Enum):
@@ -22,7 +70,7 @@ class FeatureValueDict(OrderedDict):
 
 class Phoneme:
 
-    def __init__(self, symbol, name, features, is_complete=True,
+    def __init__(self, symbol, name, features, info=None, is_complete=True,
                  parent_phonemes: set=None, feature_counter: Counter=None,
                  parent_similarity=1.0):
         """
@@ -32,6 +80,7 @@ class Phoneme:
 
         self.symbol = symbol
         self.name = name
+        self.info = parse_ipa(info)
         self.is_complete = is_complete
 
         if parent_phonemes:
@@ -81,7 +130,8 @@ class Phoneme:
         phoneme = phonemes[symbol]
         name = phoneme['name']
         features = cls.parse_features(phoneme['features'])
-        return cls(symbol, name, features)
+        info = phoneme['info']
+        return cls(symbol, name, features, info)
 
 
     @staticmethod
@@ -110,6 +160,18 @@ class Phoneme:
 
         return features
 
+    @staticmethod
+    def parse_ipa(info_dict) -> FeatureValueDict:
+
+        if info_dict is None: return info_dict
+
+        info = defaultdict(list)
+
+        features = info_dict['IPA Description'].lower()
+        tree = ipaexpr.parse(features)
+        classes = {k: ' '.join(v) for k, v in flatten(tree).items()}
+
+        return classes
 
     @property
     def features(self):
