@@ -36,7 +36,9 @@ ipaexpr = Grammar(r'''
 
 semiterm = {'VOICE', 'PLACE', 'LATERAL', 'MANNER', 'RELEASE',
             'NEAR', 'OPENING', 'POSITION', 'ROUNDING'}
-def flatten(tree, collection:defaultdict(list)):
+
+
+def flatten(tree, collection: defaultdict(list)):
     '''flattens a tree and picks out relevant properties
     (semi-terminals) specified in a set a priori
 
@@ -58,7 +60,8 @@ def flatten(tree, collection:defaultdict(list)):
         flatten(subtree, collection)
 
     # create placeholder entry for all keys
-    for key in semiterm.union({'vowel', 'consonant'}): collection[key.lower()]
+    for key in semiterm.union({'vowel', 'consonant'}):
+        collection[key.lower()]
     return collection
 
 
@@ -81,6 +84,7 @@ class FeatureValue(Enum):
     both = 2
     unspecified = -1
 
+
 class FeatureValueDict(OrderedDict):
     pass
 
@@ -88,7 +92,7 @@ class FeatureValueDict(OrderedDict):
 class Phoneme:
 
     def __init__(self, symbol, name, features, info, is_complete=True,
-                 parent_phonemes: set=None, feature_counter: Counter=None,
+                 parent_phonemes: set = None, feature_counter: Counter = None,
                  parent_similarity=1.0):
         """
         :param is_complete: indicates whether the object represents a complete phoneme
@@ -112,7 +116,6 @@ class Phoneme:
 
         # the count of how similar the parent phonemes are
         self.parent_similarity = parent_similarity
-
 
     def __repr__(self):
         return self.symbol
@@ -139,8 +142,6 @@ class Phoneme:
     def __iter__(self):
         return iter(self.value.items())
 
-
-
     @classmethod
     def from_symbol(cls, symbol: str, phonemes: dict):
         """
@@ -154,7 +155,6 @@ class Phoneme:
         features = cls.parse_features(phoneme['features'])
         info = phoneme['info']
         return cls(symbol, name, features, info)
-
 
     @staticmethod
     def parse_features(features_dict) -> FeatureValueDict:
@@ -198,24 +198,22 @@ class Phoneme:
         score = 0
 
         manner = self.ipa_desc['manner'].split() + [self.ipa_desc['lateral']]
-        props = [self.ipa_desc['voice'], self.ipa_desc['consonant'], self.ipa_desc['vowel'], self.ipa_desc['opening']]
+        props = [self.ipa_desc['voice'], self.ipa_desc['consonant'],
+                 self.ipa_desc['vowel'], self.ipa_desc['opening']]
 
-        score += sum(Sonority[key or ' '].value for key in manner)/len(manner)
+        score += sum(Sonority[key or ' '].value for key in manner) / len(manner)
         score += sum([Sonority[key or ' '].value for key in props])
 
         return round(score, 2)
-
 
     @property
     def features(self):
         return self.value
 
-
     def get_positive_features(self):
         for feature, value in self:
             if value == FeatureValue.yes or value == FeatureValue.both:
                 yield feature
-
 
     def similarity_ratio(self, other):
         """
@@ -233,12 +231,11 @@ class Phoneme:
             # add 0.5 if either of the features is ± and the other is + or -
             elif other_feature == FeatureValue.both or feature_value == FeatureValue.both:
                 if (other_feature != FeatureValue.unspecified
-                    and feature_value != FeatureValue.unspecified):
+                        and feature_value != FeatureValue.unspecified):
                     similarity_count += 0.5
 
         similarity_ratio = similarity_count / len(self.features)
         return similarity_ratio
-
 
     def partial_equals(self, other, threshold=0.7):
         """
@@ -277,9 +274,9 @@ class Phoneme:
             combined_similarity = self.similarity_ratio(other)
 
             partial_phoneme = Phoneme(new_symbol, 'partial phoneme',
-                                             intersection, is_complete=False,
-                                             parent_phonemes=new_parents,
-                                             parent_similarity=combined_similarity)
+                                      intersection, is_complete=False,
+                                      parent_phonemes=new_parents,
+                                      parent_similarity=combined_similarity)
             return partial_phoneme
 
         else:

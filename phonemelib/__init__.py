@@ -17,7 +17,7 @@ with phonemes_path.open() as phonemes_file:
 
 with ipabook_path.open() as ipabook_file:
     ipa_dict = json.load(ipabook_file, object_pairs_hook=OrderedDict)
-ipa_dict = {entry['Character']: {k.lower(): v for k,v in entry.items()}
+ipa_dict = {entry['Character']: {k.lower(): v for k, v in entry.items()}
             for entry in ipa_dict}
 
 merged_dict = {sym: dict(**phoneme_dict[sym], info=ipa_dict[sym])
