@@ -13,7 +13,8 @@ from parsimonious import IncompleteParseError
 ipaexpr = Grammar(r'''
      SOUND = CONSONANT / VOWEL / OTHER
          CONSONANT = (STYLE SP)* PLACE (SP "or" SP PLACE)? (SP LATERAL)? SP MANNER (SP "or" SP MANNER)? (SP RELEASE)?
-             STYLE = ASPIRATION / VOICE / TENDENCY
+             STYLE = EJECTIVE / ASPIRATION / VOICE / TENDENCY
+                 EJECTIVE = "ejective"
                  ASPIRATION = "aspirated"
                  VOICE = "voiced" / "voiceless"
                  TENDENCY = "labialized" / "palatalised"
@@ -37,8 +38,8 @@ def parse(text):
     print(ipaexpr.parse(text))
 
 
-semiterm = {'VOICE', 'PLACE', 'LATERAL', 'MANNER', 'RELEASE',
-            'NEAR', 'OPENING', 'POSITION', 'ROUNDING'}
+semiterm = {'EJECTIVE', 'ASPIRATION', 'TENDENCY', 'VOICE', 'PLACE', 'LATERAL',
+            'MANNER', 'RELEASE', 'NEAR', 'OPENING', 'POSITION', 'ROUNDING',}
 
 
 def flatten(tree, collection: defaultdict(list)):
@@ -209,9 +210,17 @@ class Phoneme:
 
         return features
 
-    # @staticmethod
-    def parse_ipa(self, ipa_desc):
-
+    @staticmethod
+    def parse_ipa(ipa_desc):
+        '''
+        parses an ipa description according to a gammar and returns a dictionary
+        description of the phoneme in the form
+            ...
+            'voice': 'voiced',
+            'place': 'bilabial',
+            'manner': 'plosive'
+        ...etc
+        '''
         classes = defaultdict(str)
         features = ipa_desc.lower()
         tree = ipaexpr.parse(features)
