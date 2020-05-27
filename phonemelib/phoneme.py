@@ -97,8 +97,10 @@ class Phoneme:
 
         self.symbol = symbol
         self.name = name
-        self.ipa_desc = self.parse_ipa(info['ipa description'])
         self.properties = info
+        self.ipa_desc = self.parse_ipa(info['ipa description'])
+
+        self.properties['classes'] = ' '.join(self.ipa_desc.values())
         self.properties['sonority'] = self.sonority()
 
         self.is_complete = is_complete
@@ -181,7 +183,7 @@ class Phoneme:
         return features
 
     # @staticmethod
-    def parse_ipa(self, ipa_desc) -> FeatureValueDict:
+    def parse_ipa(self, ipa_desc):
 
         classes = defaultdict(str)
 
@@ -201,7 +203,7 @@ class Phoneme:
         score += sum(Sonority[key or ' '].value for key in manner)/len(manner)
         score += sum([Sonority[key or ' '].value for key in props])
 
-        return score
+        return round(score, 2)
 
 
     @property
