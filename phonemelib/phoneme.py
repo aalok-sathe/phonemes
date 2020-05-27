@@ -68,15 +68,35 @@ def flatten(tree, collection: defaultdict(list)):
     return collection
 
 
-Sonority = Enum('Sonority', [' ',
-                             "consonant",
-                             "voiceless", "voiced",
-                             "click", "implosive", "stop", "plosive",
-                             "affricate", "fricative", "sibilant", "nasal",
-                             "trill", "lateral", "tap", "flap", "approximant",
-                             "approximate",
-                             "vowel",
-                             "low", "low-mid", "mid", "high-mid", "high"])
+class AutoEnumCount:
+    def __init__(self, n=1, inc=1):
+        self.n = n
+        self.inc = inc
+
+    def mark(self, n=None, inc=1):
+        if n:
+            self.n = n
+        self.n += self.inc
+        return self.n - self.inc
+
+ec = AutoEnumCount()
+
+Sonority = Enum('Sonority', {' ': ec.mark(),
+
+                             "consonant": ec.mark(10),
+                             "voiceless": ec.mark(), "voiced": ec.mark(),
+                             "click": ec.mark(100, 10), "implosive": ec.mark(),
+                             "stop": ec.mark(), "plosive": ec.mark(),
+                             "affricate": ec.mark(), "fricative": ec.mark(),
+                             "sibilant": ec.mark(), "nasal": ec.mark(),
+                             "trill": ec.mark(), "lateral": ec.mark(),
+                             "tap": ec.mark(), "flap": ec.mark(),
+                             "approximant": ec.mark(), "approximate": ec.mark(),
+
+                             "vowel": ec.mark(1000, 100),
+                             "low": ec.mark(), "low-mid": ec.mark(),
+                             "mid": ec.mark(), "high-mid": ec.mark(),
+                             "high": ec.mark()})
 
 
 class FeatureValue(Enum):
@@ -205,13 +225,14 @@ class Phoneme:
         score = 0
 
         manner = self.ipa_desc['manner'].split() + [self.ipa_desc['lateral']]
-        props = [self.ipa_desc['voice'], self.ipa_desc['consonant'],
+        props = [self.ipa_desc['voice'] or 'voiceless', self.ipa_desc['consonant'],
                  self.ipa_desc['vowel'], self.ipa_desc['opening']]
 
-        score += sum(Sonority[key or ' '].value for key in manner) / len(manner)
+        score += sum(Sonority[key or 'consonant'].value
+                     for key in manner) / len(manner)
         score += sum([Sonority[key or ' '].value for key in props])
 
-        return round(score**.5, 2)
+        return round(score**.4, 2)
 
     @property
     def features(self):
