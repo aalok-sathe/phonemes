@@ -11,27 +11,30 @@ from parsimonious import IncompleteParseError
 
 
 ipaexpr = Grammar(r'''
-         SOUND = CONSONANT / VOWEL / OTHER
+     SOUND = CONSONANT / VOWEL / OTHER
+         CONSONANT = (STYLE SP)* PLACE (SP "or" SP PLACE)? (SP LATERAL)? SP MANNER (SP "or" SP MANNER)? (SP RELEASE)?
+             STYLE = ASPIRATION / VOICE / TENDENCY
+                 ASPIRATION = "aspirated"
+                 VOICE = "voiced" / "voiceless"
+                 TENDENCY = "labialized" / "palatalised"
+             PLACE = "velar" / "labial" / "dental" / "alveolar" / "uvular" / "palatal" / "labial-palatal" / "retroflex" / "labiodental" / "labiovelar" / "bilabial" / "glottal" / "pharyngeal" / "postalveolar" / "alveolo-palatal" / "palato-alveolar" / "syllabic"
+             LATERAL = "lateral"
+             MANNER = "stop" / "fricative" / "approximant" / "approximate" / "implosive" / "plosive" / "click" / "nasal" / "trill" / "tap" / "flap" / "affricate" / "sibilant"
+             RELEASE = "release"
 
-         CONSONANT = (VOICE SP)? PLACE (SP "or" SP PLACE)? (SP LATERAL)? SP MANNER (SP "or" SP MANNER)? (SP RELEASE)?
-
-         VOICE = "voiced" / "voiceless"
-         PLACE = "velar" / "labial" / "dental" / "alveolar" / "uvular" / "palatal" / "retroflex" / "labiodental" / "bilabial" / "glottal" / "pharyngeal" / "postalveolar" / "alveolo-palatal" / "syllabic"
-         LATERAL = "lateral"
-         MANNER = "stop" / "fricative" / "approximant" / "approximate" / "implosive" / "plosive" / "click" / "nasal" / "trill" / "tap" / "flap" / "affricate"
-         RELEASE = "release"
-
-         VOWEL = NEAR? OPENING SP NEAR? POSITION SP ROUNDING SP "vowel"
-
+     VOWEL = NEAR? OPENING SP NEAR? POSITION SP ROUNDING SP "vowel"
          NEAR = "near-"
-         OPENING = "open" / "mid" / "close" / "open-mid" / "close-mid"
+         OPENING = "high" / "mid" / "low" / "high-mid" / "low-mid"
          POSITION = "front" / "central" / "back"
          ROUNDING = "rounded" / "unrounded"
 
-         OTHER = (~".+" SP?)*
+     OTHER = (~".+" SP?)*
 
-         SP = ~"\s+"
-     ''')
+     SP = ~"\s+"
+         ''')
+
+def parse(text):
+    print(ipaexpr.parse(text))
 
 
 semiterm = {'VOICE', 'PLACE', 'LATERAL', 'MANNER', 'RELEASE',
@@ -69,10 +72,11 @@ Sonority = Enum('Sonority', [' ',
                              "consonant",
                              "voiceless", "voiced",
                              "click", "implosive", "stop", "plosive",
-                             "fricative", "nasal", "trill", "lateral", "tap",
-                             "flap", "approximant", "approximate",
+                             "affricate", "fricative", "sibilant", "nasal",
+                             "trill", "lateral", "tap", "flap", "approximant",
+                             "approximate",
                              "vowel",
-                             "close", "close-mid", "mid", "open-mid", "open"])
+                             "low", "low-mid", "mid", "high-mid", "high"])
 
 
 class FeatureValue(Enum):
@@ -93,7 +97,7 @@ class Phoneme:
 
     def __init__(self, symbol, name, features, info, is_complete=True,
                  parent_phonemes: set = None, feature_counter: Counter = None,
-                 parent_similarity=1.0):
+                 parent_similarity=1.0, **kwargs):
         """
         :param is_complete: indicates whether the object represents a complete phoneme
         """
@@ -101,11 +105,13 @@ class Phoneme:
 
         self.symbol = symbol
         self.name = name
-        self.properties = info
-        self.ipa_desc = self.parse_ipa(info['ipa description'])
+        self.properties = info or {}
+        # self.ipa_desc = self.parse_ipa(info['ipa description'])
+        self.ipa_desc = self.parse_ipa(name)
 
         self.properties['classes'] = ' '.join(self.ipa_desc.values())
         self.properties['sonority'] = self.sonority()
+        self.properties.update(kwargs)
 
         self.is_complete = is_complete
 
@@ -153,8 +159,9 @@ class Phoneme:
         phoneme = phonemes[symbol]
         name = phoneme['name']
         features = cls.parse_features(phoneme['features'])
-        info = phoneme['info']
-        return cls(symbol, name, features, info)
+        info = None#phoneme['info']
+        # return cls(symbol, name, features, info, **phoneme)
+        return cls(symbol, info=None, **phoneme)
 
     @staticmethod
     def parse_features(features_dict) -> FeatureValueDict:
@@ -186,12 +193,12 @@ class Phoneme:
     def parse_ipa(self, ipa_desc):
 
         classes = defaultdict(str)
-
         features = ipa_desc.lower()
         tree = ipaexpr.parse(features)
         classes.update({k: ' '.join(v) for k, v in flatten(tree, defaultdict(list)).items()})
 
         return classes
+
 
     def sonority(self):
         '''computes a sonority score of this phoneme'''
@@ -204,7 +211,7 @@ class Phoneme:
         score += sum(Sonority[key or ' '].value for key in manner) / len(manner)
         score += sum([Sonority[key or ' '].value for key in props])
 
-        return round(score, 2)
+        return round(score**.5, 2)
 
     @property
     def features(self):
