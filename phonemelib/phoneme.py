@@ -80,17 +80,20 @@ class AutoEnumCount:
     def mark(self, n=None, inc=1):
         if n:
             self.n = n
+        if inc > self.inc:
+            self.inc = inc
         self.n += self.inc
         return self.n - self.inc
 
 
 ec = AutoEnumCount()
-
 Sonority = Enum('Sonority', {' ': ec.mark(),
 
-                             "consonant": ec.mark(10),
                              "voiceless": ec.mark(), "voiced": ec.mark(),
-                             "click": ec.mark(100, 10), "implosive": ec.mark(),
+
+                             "consonant": ec.mark(10, 10),
+
+                             "click": ec.mark(), "implosive": ec.mark(),
                              "stop": ec.mark(), "plosive": ec.mark(),
                              "affricate": ec.mark(), "fricative": ec.mark(),
                              "sibilant": ec.mark(), "nasal": ec.mark(),
@@ -98,11 +101,11 @@ Sonority = Enum('Sonority', {' ': ec.mark(),
                              "tap": ec.mark(), "flap": ec.mark(),
                              "approximant": ec.mark(), "approximate": ec.mark(),
 
-                             "vowel": ec.mark(1000, 100),
-                             "low": ec.mark(), "low-mid": ec.mark(),
-                             "mid": ec.mark(), "high-mid": ec.mark(),
-                             "high": ec.mark()})
-
+                             "vowel": ec.mark(100, 100),
+                             "high": ec.mark(), "high-mid": ec.mark(),
+                             "mid": ec.mark(), "low-mid": ec.mark(),
+                             "low": ec.mark(),
+                         })
 
 class FeatureValue(Enum):
     """
@@ -135,6 +138,7 @@ class Phoneme:
         self.ipa_desc = self.parse_ipa(name)
 
         self.properties['classes'] = ' '.join(self.ipa_desc.values())
+        self.properties['ipa'] = self.ipa_desc
         self.properties['sonority'] = self.sonority()
         self.properties.update(kwargs)
 
