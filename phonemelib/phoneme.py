@@ -18,28 +18,30 @@ ipaexpr = Grammar(r'''
                  ASPIRATION = "aspirated"
                  VOICE = "voiced" / "voiceless"
                  TENDENCY = "labialized" / "palatalised"
-             PLACE = "velar" / "labial" / "dental" / "alveolar" / "uvular" / "palatal" / "labial-palatal" / "retroflex" / "labiodental" / "labiovelar" / "bilabial" / "glottal" / "pharyngeal" / "postalveolar" / "alveolo-palatal" / "palato-alveolar" / "syllabic"
+             PLACE = "labial-palatal" / "alveolo-palatal" / "palato-alveolar" / "velar" / "labial" / "dental" / "alveolar" / "uvular" / "palatal" / "retroflex" / "labiodental" / "labiovelar" / "bilabial" / "glottal" / "pharyngeal" / "postalveolar" / "syllabic"
              LATERAL = "lateral"
              MANNER = "stop" / "fricative" / "approximant" / "approximate" / "implosive" / "plosive" / "click" / "nasal" / "trill" / "tap" / "flap" / "affricate" / "sibilant"
              RELEASE = "release"
 
      VOWEL = NEAR? OPENING SP NEAR? POSITION SP ROUNDING SP "vowel"
          NEAR = "near-"
-         OPENING = "high" / "mid" / "low" / "high-mid" / "low-mid"
+         OPENING = "high-mid" / "low-mid" / "high" / "mid" / "low"
          POSITION = "front" / "central" / "back"
          ROUNDING = "rounded" / "unrounded"
 
      OTHER = (~".+" SP?)*
 
-     SP = ~"\s+"
+     SP = ~"\s*"
          ''')
 
 def parse(text):
     print(ipaexpr.parse(text))
 
 
-semiterm = {'EJECTIVE', 'ASPIRATION', 'TENDENCY', 'VOICE', 'PLACE', 'LATERAL',
-            'MANNER', 'RELEASE', 'NEAR', 'OPENING', 'POSITION', 'ROUNDING',}
+semiterm = {'EJECTIVE', 'ASPIRATION', 'VOICE', 'TENDENCY',
+            'PLACE', 'LATERAL', 'MANNER',
+            'RELEASE',
+            'NEAR', 'OPENING', 'POSITION', 'ROUNDING',}
 
 
 def flatten(tree, collection: defaultdict(list)):
