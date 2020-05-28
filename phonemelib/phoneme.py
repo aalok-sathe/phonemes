@@ -23,7 +23,7 @@ ipaexpr = Grammar(r'''
              MANNER = "stop" / "fricative" / "approximant" / "approximate" / "implosive" / "plosive" / "click" / "nasal" / "trill" / "tap" / "flap" / "affricate" / "sibilant"
              RELEASE = "release"
 
-     VOWEL = NEAR? OPENING SP NEAR? POSITION SP ROUNDING SP "vowel"
+     VOWEL = NEAR? OPENING SP NEAR? POSITION SP ROUNDING SP (MANNER SP)? "vowel"
          NEAR = "near-"
          OPENING = "high-mid" / "low-mid" / "high" / "mid" / "low"
          POSITION = "front" / "central" / "back"
