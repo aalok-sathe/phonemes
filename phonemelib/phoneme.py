@@ -34,12 +34,13 @@ ipaexpr = Grammar(r'''
      SP = ~"\s+"
          ''')
 
+
 def parse(text):
     print(ipaexpr.parse(text))
 
 
 semiterm = {'EJECTIVE', 'ASPIRATION', 'TENDENCY', 'VOICE', 'PLACE', 'LATERAL',
-            'MANNER', 'RELEASE', 'NEAR', 'OPENING', 'POSITION', 'ROUNDING',}
+            'MANNER', 'RELEASE', 'NEAR', 'OPENING', 'POSITION', 'ROUNDING', }
 
 
 def flatten(tree, collection: defaultdict(list)):
@@ -79,6 +80,7 @@ class AutoEnumCount:
             self.n = n
         self.n += self.inc
         return self.n - self.inc
+
 
 ec = AutoEnumCount()
 
@@ -180,7 +182,7 @@ class Phoneme:
         phoneme = phonemes[symbol]
         name = phoneme['name']
         features = cls.parse_features(phoneme['features'])
-        info = None#phoneme['info']
+        info = None  # phoneme['info']
         # return cls(symbol, name, features, info, **phoneme)
         return cls(symbol, info=None, **phoneme)
 
@@ -227,7 +229,6 @@ class Phoneme:
         classes.update({k: ' '.join(v) for k, v in flatten(tree, defaultdict(list)).items()})
 
         return classes
-
 
     def sonority(self):
         '''computes a sonority score of this phoneme'''
